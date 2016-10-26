@@ -33,7 +33,7 @@ public class Point implements Comparable<Point> {
 	 * Unit tests the Point data type.
 	 */
 	public static void main(String[] args) {
-        /* YOUR CODE HERE */
+	    /* YOUR CODE HERE */
 	}
 
 	/**

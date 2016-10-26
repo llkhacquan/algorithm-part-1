@@ -39,7 +39,7 @@ public class FastCollinearPoints {
 					if (nCount >= NUMBER_OF_SLOPE_TO_CREATE_LINE_SEGMENTS) {
 						assert isSorted(points, i - nCount, i);
 						if (p.compareTo(points[i - nCount]) < 0)
-							lines.add(new LineSegment(p, points[i-1]));
+							lines.add(new LineSegment(p, points[i - 1]));
 					}
 					nCount = 1;
 					lastSlope = currentSlope;
@@ -49,7 +49,7 @@ public class FastCollinearPoints {
 			if (nCount >= NUMBER_OF_SLOPE_TO_CREATE_LINE_SEGMENTS) {
 				assert isSorted(points, i - nCount, i);
 				if (p.compareTo(points[i - nCount]) < 0)
-					lines.add(new LineSegment(p, points[i-1]));
+					lines.add(new LineSegment(p, points[i - 1]));
 			}
 		}
 		segments = lines.toArray(new LineSegment[lines.size()]);
