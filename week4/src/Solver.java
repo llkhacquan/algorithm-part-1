@@ -11,7 +11,16 @@ public class Solver {
 	private static Comparator<Node> nodeComparator = new Comparator<Node>() {
 		@Override
 		public int compare(Node o1, Node o2) {
-			return o1.f() - o2.f();
+			int f1 = o1.f();
+			int f2 = o2.f();
+			if (f1 > f2)
+				return 1;
+			else if (f1 == f2)
+				return 0;
+			else {
+				assert f1 < f2;
+				return -1;
+			}
 		}
 	};
 	private List<Board> solution;
@@ -25,7 +34,7 @@ public class Solver {
 		openQueue1.insert(new Node(initial, null));
 		openQueue2.insert(new Node(initial.twin(), null));
 
-		while (!openQueue1.isEmpty() || !openQueue2.isEmpty()) {
+		while (true) {
 			if (processQueue(openQueue1, true)) {
 				solvable = true;
 				return;
@@ -49,7 +58,6 @@ public class Solver {
 			solvable = true;
 			return true;
 		}
-		//closeSet.add(current);
 		Iterable<Board> bs = current.board.neighbors();
 		for (Board b : bs) {
 			Node newNode = new Node(b, current);

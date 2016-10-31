@@ -4,9 +4,10 @@ import java.util.Stack;
  * Created by quannk on 13/10/2016.
  */
 public class Board {
-	private int[] blocks;
-	private int n;
-
+	private final int n;
+	private final int hamming;
+	private final int manhattan;
+	private final int[] blocks;
 	/**
 	 * position of zero
 	 */
@@ -27,9 +28,26 @@ public class Board {
 				if (blocks[i][j] == 0)
 					iZero = i * n + j;
 			}
+
+		// calculating haming and manhattan
+		int manhattan = 0;
+		int hamming = 0;
+		for (int i = 0; i < n * n - 1; i++) {
+			int block = this.blocks[i];
+			if (block > 0)
+				manhattan += distance(i, block - 1);
+			if (block != i + 1)
+				hamming++;
+		}
+		int t = this.blocks[n * n - 1];
+		if (t > 0)
+			manhattan += distance(n * n - 1, t - 1);
+		this.manhattan = manhattan;
+		this.hamming = hamming;
+
 	}
 
-	private Board(int[] blocks) {
+	private Board(int[] blocks, Move m) {
 		n = (int) Math.sqrt(blocks.length);
 		this.blocks = new int[blocks.length];
 		for (int i = 0; i < n * n; i++) {
@@ -37,6 +55,44 @@ public class Board {
 			if (blocks[i] == 0)
 				iZero = i;
 		}
+
+		if (m != null)
+			switch (m) {
+				case LEFT:
+					swap(iZero, iZero - 1);
+					iZero--;
+					break;
+				case RIGHT:
+					swap(iZero, iZero + 1);
+					iZero++;
+					break;
+				case UP:
+					swap(iZero, iZero - n);
+					iZero -= n;
+					break;
+				case DOWN:
+					swap(iZero, iZero + n);
+					iZero += n;
+					break;
+				default:
+					assert false;
+			}
+
+		// calculating haming and manhattan
+		int manhattan = 0;
+		int haming = 0;
+		for (int i = 0; i < n * n - 1; i++) {
+			int block = this.blocks[i];
+			if (block > 0)
+				manhattan += distance(i, block - 1);
+			if (block != i + 1)
+				haming++;
+		}
+		int t = this.blocks[n * n - 1];
+		if (t > 0)
+			manhattan += distance(n * n - 1, t - 1);
+		this.manhattan = manhattan;
+		this.hamming = haming;
 	}
 
 	private void swap(int i, int j) {
@@ -46,29 +102,7 @@ public class Board {
 	}
 
 	private Board move(Move m) {
-		Board b = new Board(this.blocks);
-		switch (m) {
-			case LEFT:
-				b.swap(iZero, iZero - 1);
-				b.iZero--;
-				break;
-			case RIGHT:
-				b.swap(iZero, iZero + 1);
-				b.iZero++;
-				break;
-			case UP:
-				b.swap(iZero, iZero - b.n);
-				b.iZero -= n;
-				break;
-			case DOWN:
-				b.swap(iZero, iZero + b.n);
-				b.iZero += n;
-				break;
-			default:
-				assert false;
-		}
-
-		return b;
+		return new Board(this.blocks, m);
 	}
 
 	/**
@@ -86,12 +120,7 @@ public class Board {
 	 * @return
 	 */
 	public int hamming() {
-		int iCount = 0;
-		for (int i = 0; i < n * n - 1; i++) {
-			if (blocks[i] != i + 1)
-				iCount++;
-		}
-		return iCount;
+		return hamming;
 	}
 
 	/**
@@ -100,13 +129,7 @@ public class Board {
 	 * @return
 	 */
 	public int manhattan() {
-		int distance = 0;
-		for (int i = 0; i < n * n; i++) {
-			int block = blocks[i];
-			if (block > 0)
-				distance += distance(i, block - 1);
-		}
-		return distance;
+		return manhattan;
 	}
 
 	private int distance(int a, int b) {
@@ -127,7 +150,7 @@ public class Board {
 	 * @return
 	 */
 	public Board twin() {
-		Board b = new Board(this.blocks);
+		Board b = new Board(this.blocks, null);
 		if (b.blocks[0] != 0 && b.blocks[1] != 0)
 			b.swap(0, 1);
 		else
@@ -142,7 +165,8 @@ public class Board {
 			return true;
 		if (y.getClass() != Board.class)
 			return false;
-		if (n != ((Board) y).n)
+		Board b = (Board) y;
+		if (n != b.n || manhattan != b.manhattan || hamming != b.hamming)
 			return false;
 		for (int i = 0; i < n * n; i++)
 			if (blocks[i] != ((Board) y).blocks[i])
@@ -166,8 +190,7 @@ public class Board {
 	}
 
 	public String toString() {
-		StringBuilder s = new StringBuilder();
-		s.append(n + "\n");
+		StringBuilder s = new StringBuilder(n + "\n");
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j < n; j++) {
 				s.append(String.format("%2d ", blocks[i * n + j]));
@@ -177,7 +200,7 @@ public class Board {
 		return s.toString();
 	}
 
-	private enum Move {
+	private static enum Move {
 		LEFT, RIGHT, UP, DOWN
 	}
 }
