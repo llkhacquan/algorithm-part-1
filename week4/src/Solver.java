@@ -55,7 +55,6 @@ public class Solver {
 		if (current.board.isGoal()) {
 			if (build)
 				buildSolution(current);
-			solvable = true;
 			return true;
 		}
 		Iterable<Board> bs = current.board.neighbors();
