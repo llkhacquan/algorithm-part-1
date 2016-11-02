@@ -5,11 +5,11 @@ import edu.princeton.cs.algs4.SET;
 /**
  * Created by wind on 01/11/2016.
  */
-public class PointSET {
+public class KdTree {
 	private final SET<Point2D> pointsSet;
 
 	// construct an empty set of points
-	public PointSET() {
+	public KdTree() {
 		pointsSet = new SET<>();
 	}
 
