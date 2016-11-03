@@ -68,8 +68,9 @@ public class PointSET {
 			return null;
 		double minDistance = 10;
 		Point2D result = null;
+		double currentDistance;
 		for (Point2D p2 : pointsSet) {
-			double currentDistance = p.distanceSquaredTo(p2);
+			currentDistance = p.distanceSquaredTo(p2);
 			if (currentDistance < minDistance) {
 				result = p2;
 				minDistance = currentDistance;
