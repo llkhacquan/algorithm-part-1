@@ -1,3 +1,4 @@
+import com.sun.istack.internal.NotNull;
 import edu.princeton.cs.algs4.Point2D;
 import edu.princeton.cs.algs4.RectHV;
 import edu.princeton.cs.algs4.SET;
@@ -14,6 +15,23 @@ public class KdTree {
      * construct an empty set of points
      */
     public KdTree() {
+    }
+
+    /**
+     * decide the next point should be on the left or on the right of current node. current node use useX
+     *
+     * @param useX
+     * @param current
+     * @param next
+     * @return
+     */
+    private static boolean shouldGoLeft(boolean useX, Point2D current, Point2D next) {
+        assert !current.equals(next);
+        if (useX) {
+            return next.x() < current.x();
+        } else {
+            return next.y() < current.y();
+        }
     }
 
     /**
@@ -72,23 +90,6 @@ public class KdTree {
                 current.right = put(current.right, p, !useX);
             }
             return current;
-        }
-    }
-
-    /**
-     * decide the next point should be on the left or on the right of current node. current node use useX
-     *
-     * @param useX
-     * @param current
-     * @param next
-     * @return
-     */
-    private static boolean shouldGoLeft(boolean useX, Point2D current, Point2D next) {
-        assert !current.equals(next);
-        if (useX) {
-            return next.x() < current.x();
-        } else {
-            return next.y() < current.y();
         }
     }
 
@@ -215,7 +216,6 @@ public class KdTree {
         ns.distance = root.p.distanceSquaredTo(p);
         ns.point = root.p;
         nearest(p, root, ns);
-        assert ns != null;
         return ns.point;
     }
 
@@ -277,8 +277,7 @@ public class KdTree {
         private final boolean useX;
         private Node left, right;
 
-        private Node(Point2D p, boolean useX) {
-            assert p != null;
+        private Node(@NotNull Point2D p, boolean useX) {
             this.p = p;
             this.useX = useX;
         }
