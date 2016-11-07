@@ -1,6 +1,7 @@
 import edu.princeton.cs.algs4.Point2D;
 import edu.princeton.cs.algs4.RectHV;
 import edu.princeton.cs.algs4.SET;
+import edu.princeton.cs.algs4.StdDraw;
 
 /**
  * Created by wind on 01/11/2016.
@@ -108,7 +109,7 @@ public class KdTree {
             }
             current = shouldGoLeft(current.useX, current.p, p) ? current.left : current.right;
         }
-        return current != null;
+        return false;
     }
 
     /**
@@ -116,7 +117,7 @@ public class KdTree {
      */
     public void draw() {
         if (root != null) {
-            draw(root);
+            draw(root, 0, 1, 0, 1);
         }
     }
 
@@ -125,14 +126,30 @@ public class KdTree {
      *
      * @param node
      */
-    private void draw(Node node) {
+    private void draw(Node node, double minX, double maxX, double minY, double maxY) {
         assert node != null;
+        StdDraw.setPenColor(StdDraw.BLACK);
         node.p.draw();
+        if (node.useX) {
+            StdDraw.setPenColor(StdDraw.RED);
+            StdDraw.line(node.p.x(), minY, node.p.x(), maxY);
+        } else {
+            StdDraw.setPenColor(StdDraw.BLUE);
+            StdDraw.line(minX, node.p.y(), maxX, node.p.y());
+        }
         if (node.left != null) {
-            draw(node.left);
+            if (node.useX) {
+                draw(node.left, minX, node.p.x(), minY, maxY);
+            } else {
+                draw(node.left, minX, maxX, minY, node.p.y());
+            }
         }
         if (node.right != null) {
-            draw(node.right);
+            if (node.useX) {
+                draw(node.right, node.p.x(), maxX, minY, maxY);
+            } else {
+                draw(node.right, minX, maxX, node.p.y(), maxY);
+            }
         }
     }
 
