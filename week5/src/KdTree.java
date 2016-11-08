@@ -50,8 +50,8 @@ public class KdTree {
             throw new NullPointerException();
         }
 		if (root == null) {
-			nNode++;
 			root = new Node(p, true, new RectHV(0, 0, 1, 1));
+            nNode = 1;
 		} else {
 			put(root, p);
 		}
@@ -66,17 +66,18 @@ public class KdTree {
 		if (root.p.equals(p)) {
 			return;
 		}
-		nNode++;
 		boolean left = shouldGoLeft(root.useX, root.p, p);
 		if (left) {
 			if (root.left == null) {
 				root.left = createNewNode(root, true, p);
+                nNode++;
 			} else {
 				put(root.left, p);
 			}
 		} else {
 			if (root.right == null) {
 				root.right = createNewNode(root, false, p);
+                nNode++;
 			} else {
 				put(root.right, p);
 			}
