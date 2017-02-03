@@ -1,6 +1,5 @@
 import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.StdOut;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  * Created by quannk on 03/02/2017.
@@ -8,12 +7,12 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 public class Outcast {
 	public Outcast(WordNet wordnet)         // constructor takes a WordNet object
 	{
-		throw new NotImplementedException();
+
 	}
 
 	public String outcast(String[] nouns)   // given an array of WordNet nouns, return an outcast
 	{
-		throw new NotImplementedException();
+		return null;
 	}
 	public static void main(String[] args)  // see test client below
 	{
