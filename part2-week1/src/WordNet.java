@@ -1,7 +1,6 @@
 import edu.princeton.cs.algs4.Bag;
 import edu.princeton.cs.algs4.Digraph;
 import edu.princeton.cs.algs4.In;
-import edu.princeton.cs.algs4.Out;
 
 import java.util.*;
 
@@ -10,6 +9,7 @@ import java.util.*;
  */
 public class WordNet {
 	private static final int UNKNOWN_DISTANCE = -1;
+	private static final int UNKNOWN_VERTEX = -1;
 	private final List<Word> words = new ArrayList<>();
 	private final Digraph g;
 
@@ -20,16 +20,11 @@ public class WordNet {
 		}
 		In in = new In(synsets);
 		while (in.hasNextLine()) {
-			words.add(new Word(in.readLine()));
+			words.addAll(Word.fromLine(in.readLine()));
 		}
 		in.close();
 		words.sort(Comparator.comparing(o -> o.word));
-
-		Out out = new Out();
-		out.println("Read " + words.size() + " synsets");
-
 		g = new Digraph(words.size());
-
 		in = new In(hypernyms);
 		while (in.hasNextLine()) {
 			String[] parts = in.readLine().split(",");
@@ -39,22 +34,13 @@ public class WordNet {
 				g.addEdge(t, a);
 			}
 		}
-		out.println("Added " + g.E() + " edges");
 	}
 
 	// do unit testing of this class
 	public static void main(String[] args) {
-		WordNet wn = new WordNet("part2-week1/wordnet/synsets100-subgraph.txt",
-		                         "part2-week1/wordnet/hypernyms100-subgraph.txt");
-		if (wn.search("someword") >= 0) {
-			throw new AssertionError();
-		}
-		if (wn.search(wn.words.get(0).word) != 0) {
-			throw new AssertionError();
-		}
-		if (wn.search(wn.words.get(1).word) != 1) {
-			throw new AssertionError();
-		}
+		WordNet wn = new WordNet("part2-week1/wordnet/synsets.txt",
+				"part2-week1/wordnet/hypernyms.txt");
+		wn.sap("Near_East", "tomograph");
 	}
 
 	// returns all WordNet nouns
@@ -76,7 +62,7 @@ public class WordNet {
 		if (word == null) {
 			throw new NullPointerException();
 		}
-		Word w = new Word("0," + word + ",");
+		Word w = new Word(0, word);
 		return Collections.binarySearch(words, w, Comparator.comparing(o -> o.word));
 	}
 
@@ -87,8 +73,8 @@ public class WordNet {
 	}
 
 	private Word findSap(String nounA, String nounB) {
-		int iA, iB;
-		if ((iA = search(nounA)) < 0 || (iB = search(nounB)) < 0) {
+		int iA = search(nounA), iB = search(nounB);
+		if ((iA) < 0 || (iB) < 0) {
 			throw new IllegalArgumentException();
 		}
 		if (iA == iB) {
@@ -106,14 +92,15 @@ public class WordNet {
 		qA.add(a.id);
 		Queue<Integer> qB = new LinkedList<>();
 		qB.add(b.id);
-		int commomAncestor;
-		found:
-		while (true) {
+		int commomAncestor = UNKNOWN_VERTEX;
+		while (!qA.isEmpty() || !qB.isEmpty()) {
 			if (!qA.isEmpty()) {
 				int v = qA.remove();
 				if (words.get(v).dB != UNKNOWN_DISTANCE) {
-					commomAncestor = v;
-					break found;
+					if (commomAncestor == UNKNOWN_VERTEX || words.get(commomAncestor).dA + words.get(commomAncestor).dB >
+							words.get(v).dA + words.get(v).dB) {
+						commomAncestor = v;
+					}
 				}
 				for (int i : g.adj(v)) {
 					if (words.get(i).dA == UNKNOWN_DISTANCE) {
@@ -127,8 +114,10 @@ public class WordNet {
 			if (!qB.isEmpty()) {
 				int v = qB.remove();
 				if (words.get(v).dA != UNKNOWN_DISTANCE) {
-					commomAncestor = v;
-					break found;
+					if (commomAncestor == UNKNOWN_VERTEX || words.get(commomAncestor).dA + words.get(commomAncestor).dB >
+							words.get(v).dA + words.get(v).dB) {
+						commomAncestor = v;
+					}
 				}
 				for (int i : g.adj(v)) {
 					if (words.get(i).dB == UNKNOWN_DISTANCE) {
@@ -156,9 +145,19 @@ class Word {
 	int dA; // use for calculating distance and sap only
 	int dB; // use for calculating distance and sap only
 
-	Word(String s) {
+	static ArrayList<Word> fromLine(String s){
 		String[] ss = s.split(",");
-		id = Integer.parseInt(ss[0]);
-		word = ss[1];
+		int id = Integer.parseInt(ss[0]);
+		String ws[] = ss[1].split(" ");
+		ArrayList<Word> r= new ArrayList<>();
+		for (String w: ws) {
+			r.add(new Word(id, w));
+		}
+		return r;
+	}
+
+	Word(int id, String w) {
+		this.id = id;
+		word = w;
 	}
 }

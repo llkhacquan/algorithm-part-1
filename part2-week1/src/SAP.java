@@ -13,10 +13,11 @@ import java.util.Queue;
 public class SAP {
 	// constructor takes a digraph (not necessarily a DAG)
 	private static final int UNKNOWN_DISTANCE = -1;
+	private static final int UNKNOWN_VERTEX = -1;
 	private final Digraph g;
 
 	public SAP(Digraph G) {
-		g = G;
+		g = new Digraph(G);
 	}
 
 	// do unit testing of this class
@@ -60,12 +61,12 @@ public class SAP {
 	private int[] calculate(Iterable<Integer> v, Iterable<Integer> w) {
 		for (int i : v) {
 			if (i < 0 || i >= g.V()) {
-				throw new IllegalArgumentException();
+				throw new IndexOutOfBoundsException();
 			}
 		}
 		for (int i : w) {
 			if (i < 0 || i >= g.V()) {
-				throw new IllegalArgumentException();
+				throw new IndexOutOfBoundsException();
 			}
 		}
 
@@ -75,18 +76,19 @@ public class SAP {
 		Arrays.setAll(d2, operand -> UNKNOWN_DISTANCE);
 		// bfs from both w and v
 		Queue<Integer> qA = new LinkedList<>();
+		Queue<Integer> qB = new LinkedList<>();
 		v.forEach(qA::add);
 		v.forEach(integer -> d1[integer] = 0);
-		Queue<Integer> qB = new LinkedList<>();
 		w.forEach(qB::add);
 		w.forEach(integer -> d2[integer] = 0);
-		int commomAncestor = -1;
+		int commomAncestor = UNKNOWN_VERTEX;
 		while (!qA.isEmpty() || !qB.isEmpty()) {
 			if (!qA.isEmpty()) {
 				int c = qA.remove();
-					if (d2[c] != UNKNOWN_DISTANCE) {
-					commomAncestor = c;
-					break;
+				if (d2[c] != UNKNOWN_DISTANCE) {
+					if (commomAncestor == UNKNOWN_VERTEX || d1[commomAncestor] + d2[commomAncestor] > d1[c] + d2[c]) {
+						commomAncestor = c;
+					}
 				}
 				for (int i : g.adj(c)) {
 					if (d1[i] == UNKNOWN_DISTANCE) {
@@ -100,8 +102,9 @@ public class SAP {
 			if (!qB.isEmpty()) {
 				int c = qB.remove();
 				if (d1[c] != UNKNOWN_DISTANCE) {
-					commomAncestor = c;
-					break;
+					if (commomAncestor == UNKNOWN_VERTEX || d1[commomAncestor] + d2[commomAncestor] > d1[c] + d2[c]) {
+						commomAncestor = c;
+					}
 				}
 				for (int i : g.adj(c)) {
 					if (d2[i] == UNKNOWN_DISTANCE) {
