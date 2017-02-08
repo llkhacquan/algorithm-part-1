@@ -9,6 +9,10 @@ import java.util.stream.Collectors;
  * Created by quannk on 02/02/2017.
  */
 public class WordNet {
+	private final static int UNKNOWN = 0;
+	private final static int VISITED = 1;
+	private final static int IN_STACK = 2;
+
 	private final List<Word> words = new ArrayList<>();
 	private final List<Word> index = new ArrayList<>();
 	private final Set<String> nouns = new HashSet<>();
@@ -20,16 +24,18 @@ public class WordNet {
 			throw new NullPointerException();
 		}
 		In in = new In(synsets);
+		int nLines = 0;
 		while (in.hasNextLine()) {
 			ArrayList<Word> ws = Word.fromLine(in.readLine());
 			words.addAll(ws);
 			index.addAll(ws);
 			nouns.addAll(ws.stream().map(word -> word.word).collect(Collectors.toSet()));
+			nLines++;
 		}
 		in.close();
 		words.sort(Comparator.comparing(o -> o.word));
 		index.sort(Comparator.comparing(o -> o.id));
-		Digraph g = new Digraph(words.size());
+		Digraph g = new Digraph(nLines);
 		in = new In(hypernyms);
 		while (in.hasNextLine()) {
 			String[] parts = in.readLine().split(",");
@@ -40,6 +46,45 @@ public class WordNet {
 			}
 		}
 		sap = new SAP(g);
+		// check if wordnet have a root by finding it, then bdf from the root to check circle and 2 root
+		{
+			g = g.reverse();
+			int nRoot = 0;
+			int root = -1;
+			for (int i = 0; i < g.V(); i++) {
+				if (g.indegree(i) == 0) {
+					if (g.outdegree(i) == 0) {
+						throw new IllegalArgumentException("Multiple root or circle");
+					}
+					root = i;
+
+					nRoot++;
+					if (nRoot > 1) {
+						throw new IllegalArgumentException("Multiple root");
+					}
+				}
+			}
+			if (root == -1) {
+				throw new IllegalArgumentException("Circle early detected");
+			}
+			int mark[] = new int[g.V()];
+			Stack<Integer> stack = new Stack<>();
+			stack.push(root);
+			mark[root] = IN_STACK;
+			while (!stack.isEmpty()) {
+				int current = stack.pop();
+				mark[current] = VISITED;
+				for (int v : g.adj(current)) {
+					if (mark[v] == UNKNOWN) {
+						stack.push(v);
+						mark[v] = IN_STACK;
+					} else if (mark[v] == VISITED) {
+						throw new IllegalArgumentException("Circle detected");
+					}
+				}
+			}
+		}
+
 	}
 
 	// do unit testing of this class

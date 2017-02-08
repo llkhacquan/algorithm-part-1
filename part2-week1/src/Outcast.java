@@ -28,10 +28,9 @@ public class Outcast {
 		String max = null;
 		int maxD = -1;
 		int d;
-		Iterable<String> words = wn.nouns();
 		for (String noun : nouns) {
 			d = 0;
-			for (String w : words) {
+			for (String w : nouns) {
 				if (!w.equals(noun)) {
 					d += wn.distance(w, noun);
 				}
