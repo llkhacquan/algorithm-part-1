@@ -9,8 +9,6 @@ import java.util.stream.Collectors;
  * Created by quannk on 02/02/2017.
  */
 public class WordNet {
-	private static final int UNKNOWN_DISTANCE = -1;
-	private static final int UNKNOWN_VERTEX = -1;
 	private final List<Word> words = new ArrayList<>();
 	private final List<Word> index = new ArrayList<>();
 	private final Set<String> nouns = new HashSet<>();
@@ -49,8 +47,7 @@ public class WordNet {
 		WordNet wn = new WordNet("part2-week1/wordnet/synsets.txt",
 		                         "part2-week1/wordnet/hypernyms.txt");
 		Out out = new Out();
-		out.println(wn.isNoun("anamorphosis"));
-		wn.sap("vicarage", "underpants");
+		out.print(wn.distance("shell_plating", "welcome"));
 	}
 
 	// returns all WordNet nouns
@@ -60,44 +57,47 @@ public class WordNet {
 
 	// is the word a WordNet noun?
 	public boolean isNoun(String word) {
-		return search(word) >= 0;
-	}
-
-	private int search(String word) {
 		if (word == null) {
 			throw new NullPointerException();
 		}
+		return nouns.contains(word);
+	}
+
+	private ArrayList<Integer> search(String word) {
+		if (word == null) {
+			throw new NullPointerException();
+		}
+		if (!isNoun(word)) {
+			throw new IllegalArgumentException();
+		}
 		Word w = new Word(0, word);
-		return Collections.binarySearch(words, w, Comparator.comparing(o -> o.word));
+		int j = Collections.binarySearch(words, w, Comparator.comparing(o -> o.word));
+		int a = j, b = j;
+		while (a > 0 && words.get(a - 1).word.equals(word)) {
+			a--;
+		}
+		while (b < words.size() - 1 && words.get(b + 1).word.equals(word)) {
+			b++;
+		}
+		ArrayList<Integer> r = new ArrayList<>();
+		for (int k = a; k <= b; k++) {
+			r.add(words.get(k).id);
+		}
+		return r;
 	}
 
 	// dA between nounA and nounB (defined below)
 	public int distance(String nounA, String nounB) {
-		int iA = search(nounA), iB = search(nounB);
-		if ((iA) < 0 || (iB) < 0) {
-			throw new IllegalArgumentException();
-		}
-		if (iA == iB) {
-			return 0;
-		} else {
-			return sap.length(iA, iB);
-		}
+		ArrayList<Integer> iA = search(nounA), iB = search(nounB);
+		return sap.length(iA, iB);
 	}
 
 	// a synset (second field of synsets.txt) that is the common ancestor of nounA and nounB
 	// in a shortest ancestral path (defined below)
 	public String sap(String nounA, String nounB) {
-		int iA = search(nounA), iB = search(nounB);
+		ArrayList<Integer> iA = search(nounA), iB = search(nounB);
 		int ancestor;
-		if ((iA) < 0 || (iB) < 0) {
-			throw new IllegalArgumentException();
-		}
-		if (iA == iB) {
-			ancestor = iA;
-		} else {
-			ancestor = sap.ancestor(iA, iB);
-		}
-
+		ancestor = sap.ancestor(iA, iB);
 		Word w = new Word(ancestor, "");
 
 		int j = Collections.binarySearch(index, w, Comparator.comparing(o -> o.id));
@@ -108,7 +108,7 @@ public class WordNet {
 		while (b < index.size() - 1 && index.get(b + 1).id == ancestor) {
 			b++;
 		}
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		for (int k = a; k <= b; k++) {
 			sb.append(index.get(k).word).append(" ");
 		}
