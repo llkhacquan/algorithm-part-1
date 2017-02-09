@@ -73,14 +73,15 @@ public class WordNet {
 			mark[root] = IN_STACK;
 			while (!stack.isEmpty()) {
 				int current = stack.pop();
+				if (mark[current] == VISITED) {
+					throw new IllegalArgumentException("Circle detected");
+				}
 				mark[current] = VISITED;
 				for (int v : g.adj(current)) {
 					if (mark[v] == UNKNOWN) {
 						stack.push(v);
 						mark[v] = IN_STACK;
-					} else if (mark[v] == VISITED) {
-						throw new IllegalArgumentException("Circle detected");
-					}
+					} 
 				}
 			}
 		}
