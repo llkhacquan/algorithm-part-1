@@ -107,27 +107,27 @@ public class SeamCarver {
 
 		// calculate other row of e, from 1 to height - 1
 		for (int y = 1; y < h; y++) {
-			// calculate energy for the first element
-			if (e[0][y - 1] < e[1][y - 1]) {
-				e[0][y] = e[0][y - 1] + energy(0, y);
-				track[0][y] = UP;
-			} else {
-				e[0][y] = e[1][y - 1] + energy(0, y);
-				track[0][y] = RIGHT;
+			if (w > 1) {
+				// calculate energy for the first element
+				if (e[0][y - 1] < e[1][y - 1]) {
+					e[0][y] = e[0][y - 1] + energy(0, y);
+					track[0][y] = UP;
+				} else {
+					e[0][y] = e[1][y - 1] + energy(0, y);
+					track[0][y] = RIGHT;
+				}
+				// calculate energy for the last element
+				int x = w - 1;
+				if (e[x][y - 1] < e[x - 1][y - 1]) {
+					e[x][y] = e[x][y - 1] + energy(x, y);
+					track[x][y] = UP;
+				} else {
+					e[x][y] = e[x - 1][y - 1] + energy(x, y);
+					track[x][y] = LEFT;
+				}
 			}
-
-			// calculate energy for the last element
-			int x = w - 1;
-			if (e[x][y - 1] < e[x - 1][y - 1]) {
-				e[x][y] = e[x][y - 1] + energy(x, y);
-				track[x][y] = UP;
-			} else {
-				e[x][y] = e[x - 1][y - 1] + energy(x, y);
-				track[x][y] = LEFT;
-			}
-
 			// calculate energy for other elements: from 1 to w - 2;
-			for (x = 1; x < w - 1; x++) {
+			for (int x = 1; x < w - 1; x++) {
 				double min = e[x - 1][y - 1];
 				byte t = LEFT;
 				if (min > e[x][y - 1]) {

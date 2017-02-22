@@ -15,7 +15,7 @@ import edu.princeton.cs.algs4.StdOut;
 public class PrintEnergy {
 
 	public static void main(String[] args) {
-		Picture picture = new Picture("part2-week2/seamCarving/6x5.png");
+		Picture picture = new Picture("part2-week2/seamCarving/1x8.png");
 		StdOut.printf("image is %d pixels wide by %d pixels high.\n", picture.width(), picture.height());
 
 		for (int row = 0; row < picture.height(); row++) {
