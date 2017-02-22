@@ -6,7 +6,7 @@ import java.awt.*;
  * Created by quannk on 22/02/2017.
  */
 public class SeamCarver {
-	private static final int BORDER_COLOR_ELEMENT = 1000;
+	private static final int BORDER_ENERGY = 1000;
 	private static final byte NONE = 3;
 	private static final byte UP = 0;
 	private static final byte LEFT = 1;
@@ -17,6 +17,21 @@ public class SeamCarver {
 	public SeamCarver(Picture picture)                // create a seam carver object based on the given picture
 	{
 		p = new Picture(picture);
+	}
+
+	public static void main(String[] args) {
+		Picture picture = new Picture("part2-week2/seamCarving/HJocean.png");
+		rotateLeft(picture).show();
+	}
+
+	private static Picture rotateLeft(Picture p) {
+		Picture r = new Picture(p.height(), p.width());
+		for (int x = 0; x < p.width(); x++) {
+			for (int y = 0; y < p.height(); y++) {
+				r.set(y, x, p.get(x, y));
+			}
+		}
+		return r;
 	}
 
 	public Picture picture()                          // current picture
@@ -34,63 +49,31 @@ public class SeamCarver {
 		return p.height();
 	}
 
-	public double energy(int x, int y)               // energy of pixel at column x and row y
-	{
+	/**
+	 * energy of pixel at column x and row y
+	 */
+	public double energy(int x, int y) {
 		if (x < 0 || x >= p.width() || y < 0 || y >= p.height()) {
 			throw new IndexOutOfBoundsException();
 		}
-		return Math.sqrt(dX2(x, y) + dY2(x, y));
+		if (x == 0 || x == p.width() - 1 || y == 0 || y == p.height() - 1) {
+			return BORDER_ENERGY;
+		}
+		return Math.sqrt(d(p.get(x - 1, y), p.get(x + 1, y))
+	                   + d(p.get(x, y - 1), p.get(x, y + 1)));
 	}
 
-	private int dX2(int x, int y) {
-		Color c = p.get(x, y);
+	private int d(Color c1, Color c2) {
 		int result = 0;
-		if (x > 0) {
-			result += distance(c, p.get(x - 1, y));
-		} else {
-			result += distance(c, null);
-		}
-		if (x < p.width() - 1) {
-			result += distance(c, p.get(x + 1, y));
-		} else {
-			result += distance(c, null);
-		}
-		return result;
-	}
-
-	private int dY2(int x, int y) {
-		Color c = p.get(x, y);
-		int result = 0;
-		if (y > 0) {
-			result += distance(c, p.get(x, y - 1));
-		} else {
-			result += distance(c, null);
-		}
-		if (y < p.height() - 1) {
-			result += distance(c, p.get(x, y + 1));
-		} else {
-			result += distance(c, null);
-		}
-		return result;
-	}
-
-	private int distance(Color c, Color c1) {
-		int result = 0;
-		if (c1 != null) {
-			result += (c1.getAlpha() - c.getAlpha()) * (c1.getAlpha() - c.getAlpha());
-			result += (c1.getBlue() - c.getBlue()) * (c1.getBlue() - c.getBlue());
-			result += (c1.getRed() - c.getRed()) * (c1.getRed() - c.getRed());
-		} else {
-			result += (BORDER_COLOR_ELEMENT - c.getAlpha()) * (BORDER_COLOR_ELEMENT - c.getAlpha());
-			result += (BORDER_COLOR_ELEMENT - c.getBlue()) * (BORDER_COLOR_ELEMENT - c.getBlue());
-			result += (BORDER_COLOR_ELEMENT - c.getRed()) * (BORDER_COLOR_ELEMENT - c.getRed());
-		}
+		result += (c2.getAlpha() - c1.getAlpha()) * (c2.getAlpha() - c1.getAlpha());
+		result += (c2.getBlue() - c1.getBlue()) * (c2.getBlue() - c1.getBlue());
+		result += (c2.getRed() - c1.getRed()) * (c2.getRed() - c1.getRed());
 		return result;
 	}
 
 	public int[] findHorizontalSeam()               // sequence of indices for horizontal seam
 	{
-		return null;
+		return new SeamCarver(rotateLeft(p)).findVerticalSeam();
 	}
 
 	public int[] findVerticalSeam()                 // sequence of indices for vertical seam
@@ -100,73 +83,73 @@ public class SeamCarver {
 
 		// init total energy array: e[i][j] = smallest energy of paths from top to [i, j]
 		// init the track array: e[i][j] = {UP, LEFT, RIGHT}
-		byte track[][] = new byte[p.height()][p.width()];
-		double e[][] = new double[p.height()][p.width()];
+		byte track[][] = new byte[p.width()][p.height()];
+		double e[][] = new double[p.width()][p.height()];
 
 		// calculate first row of e
 		for (int i = 0; i < p.width(); i++) {
-			e[0][i] = energy(0, i);
-			track[0][i] = NONE;
+			e[i][0] = energy(i, 0);
+			track[i][0] = NONE;
 		}
 
 		// calculate other row of e, from 1 to height - 1
-		for (int j = 1; j < p.height(); j++) {
+		for (int y = 1; y < p.height(); y++) {
 			// calculate energy for the first element
-			if (e[j - 1][0] > e[j - 1][1]) {
-				e[j][0] = e[j - 1][0] + energy(j, 0);
-				track[j][0] = UP;
+			if (e[0][y - 1] < e[1][y - 1]) {
+				e[0][y] = e[0][y - 1] + energy(0, y);
+				track[0][y] = UP;
 			} else {
-				e[j][0] = e[j - 1][1] + energy(j, 0);
-				track[j][0] = RIGHT;
+				e[0][y] = e[1][y - 1] + energy(0, y);
+				track[0][y] = RIGHT;
 			}
 
 			// calculate energy for the last element
-			int i = p.width() - 1;
-			if (e[j - 1][i] > e[j - 1][i - 1]) {
-				e[j][0] = e[j - 1][i] + energy(j, i);
-				track[j][0] = UP;
+			int x = p.width() - 1;
+			if (e[x][y - 1] > e[x - 1][y - 1]) {
+				e[0][y] = e[x][y - 1] + energy(x, y);
+				track[0][y] = UP;
 			} else {
-				e[j][0] = e[j - 1][i - 1] + energy(j, i);
-				track[j][0] = LEFT;
+				e[0][y] = e[x - 1][y - 1] + energy(x, y);
+				track[0][y] = LEFT;
 			}
 
 			// calculate energy for other elements: from 1 to p.width() - 2;
-			for (i = 1; i < p.width() - 1; i++) {
-				double max = e[j - 1][i - 1];
+			for (x = 1; x < p.width() - 1; x++) {
+				double min = e[x - 1][y - 1];
 				byte t = LEFT;
-				if (max < e[j - 1][i]) {
-					max = e[j - 1][i];
+				if (min > e[x][y - 1]) {
+					min = e[x][y - 1];
 					t = UP;
 				}
-				if (max < e[j - 1][i + 1]) {
-					max = e[j - 1][i + 1];
+				if (min > e[x + 1][y - 1]) {
+					min = e[x + 1][y - 1];
 					t = RIGHT;
 				}
-				e[j][i] = max + energy(i, j);
-				track[j][i] = t;
+				e[x][y] = min + energy(x, y);
+				track[x][y] = t;
 			}
 		}
 
 		// ok, we got the energy array, let calculate the seam
 		// find the end point of the seam
-		int xMaxEnergy = 0;
-		double maxE = e[p.height() - 1][xMaxEnergy];
+		int xMinEnergy = 0;
+		double minE = e[xMinEnergy][p.height() - 1];
 		for (int i = 1; i < p.width(); i++) {
-			if (maxE < e[p.height() - 1][i]) {
-				xMaxEnergy = i;
-				maxE = e[p.height() - 1][i];
+			if (minE > e[i][p.height() - 1]) {
+				xMinEnergy = i;
+				minE = e[i][p.height() - 1];
 			}
 		}
 
 		// fill the result array
 		for (int j = p.height() - 1; j >= 0; j--) {
-			r[j] = xMaxEnergy;
-			switch (track[j][xMaxEnergy]) {
+			r[j] = xMinEnergy;
+			switch (track[xMinEnergy][j]) {
 				case LEFT:
-					xMaxEnergy--;
+					xMinEnergy--;
 					break;
 				case RIGHT:
-					xMaxEnergy++;
+					xMinEnergy++;
 					break;
 			}
 		}
@@ -176,10 +159,31 @@ public class SeamCarver {
 
 	public void removeHorizontalSeam(int[] seam)   // remove horizontal seam from current picture
 	{
+		Picture r = new Picture(p.width() - 1, p.height());
+		for (int x = 0; x < p.width() - 1; x++) {
+			for (int y = 0; y < p.height(); y++) {
+				if (seam[x] >= y) {
+					r.set(x, y, p.get(x, y));
+				} else {
+					r.set(x, y, p.get(x + 1, y));
+				}
+			}
+		}
+		p = r;
 	}
 
 	public void removeVerticalSeam(int[] seam)     // remove vertical seam from current picture
 	{
-
+		Picture r = new Picture(p.width(), p.height() - 1);
+		for (int x = 0; x < p.width(); x++) {
+			for (int y = 0; y < p.height() - 1; y++) {
+				if (seam[y] >= x) {
+					r.set(x, y, p.get(x, y));
+				} else {
+					r.set(x, y, p.get(x, y + 1));
+				}
+			}
+		}
+		p = r;
 	}
 }
