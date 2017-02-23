@@ -21,9 +21,9 @@ public class ResizeDemo {
 //            return;
 //        }
         args = new String[3];
-        args[0] = "part2-week2/seamCarving/HJocean.png";
-        args[1] = "200";
-        args[2] = "100";
+        args[0] = "part2-week2/seamCarving/6x5.png";
+        args[1] = "5";
+        args[2] = "4";
 
         Picture inputImg = new Picture(args[0]);
         int removeColumns = Integer.parseInt(args[1]);

@@ -183,7 +183,7 @@ public class SeamCarver {
 	public void removeVerticalSeam(int[] seam)     // remove vertical seam from current picture
 	{
 		for (int y = 0; y < h; y++) {
-			for (int x = seam[y]; x < w - 1; w++) {
+			for (int x = seam[y]; x < w - 1; x++) {
 				c[x][y] = c[x + 1][y];
 			}
 		}
