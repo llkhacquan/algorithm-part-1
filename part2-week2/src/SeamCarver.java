@@ -11,17 +11,17 @@ public class SeamCarver {
 	private static final byte UP = 0;
 	private static final byte LEFT = 1;
 	private static final byte RIGHT = 2;
-	private final Color c[][];
+	private final int c[][];
 	private int w, h;
 
 	public SeamCarver(Picture picture)                // create a seam carver object based on the given picture
 	{
 		w = picture.width();
 		h = picture.height();
-		c = new Color[w][h];
+		c = new int[w][h];
 		for (int x = 0; x < w; x++) {
 			for (int y = 0; y < h; y++) {
-				c[x][y] = picture.get(x, y);
+				c[x][y] = picture.get(x, y).getRGB();
 			}
 		}
 	}
@@ -46,7 +46,7 @@ public class SeamCarver {
 		Picture p = new Picture(w, h);
 		for (int x = 0; x < w; x++) {
 			for (int y = 0; y < h; y++) {
-				p.set(x, y, c[x][y]);
+				p.set(x, y, new Color(c[x][y]));
 			}
 		}
 		return p;
@@ -73,14 +73,14 @@ public class SeamCarver {
 			return BORDER_ENERGY;
 		}
 		return Math.sqrt(d(c[x - 1][y], c[x + 1][y])
-				+ d(c[x][y - 1], c[x][y + 1]));
+				                 + d(c[x][y - 1], c[x][y + 1]));
 	}
 
-	private int d(Color c1, Color c2) {
+	private int d(int c1, int c2) {
 		int result = 0;
-		result += (c2.getGreen() - c1.getGreen()) * (c2.getGreen() - c1.getGreen());
-		result += (c2.getBlue() - c1.getBlue()) * (c2.getBlue() - c1.getBlue());
-		result += (c2.getRed() - c1.getRed()) * (c2.getRed() - c1.getRed());
+		result += (((c2) & 0xFF) - ((c1) & 0xFF)) * (((c2) & 0xFF) - ((c1) & 0xFF));
+		result += (((c2 >> 8) & 0xFF) - ((c1 >> 8) & 0xFF)) * (((c2 >> 8) & 0xFF) - ((c1 >> 8) & 0xFF));;
+		result += (((c2 >> 16) & 0xFF) - ((c1 >> 16) & 0xFF)) * (((c2 >> 16) & 0xFF) - ((c1 >> 16) & 0xFF));
 		return result;
 	}
 
@@ -172,21 +172,48 @@ public class SeamCarver {
 
 	public void removeHorizontalSeam(int[] seam)   // remove horizontal seam from current picture
 	{
-		for (int x = 0; x < w; x++) {
-			for (int y = seam[x]; y < h - 1; y++) {
-				c[x][y] = c[x][y + 1];
+		if (seam.length != w || h == 1) {
+			throw new IllegalArgumentException();
+		}
+		for (int x = 0; x < w - 1; x++) {
+			if (seam[x] < 0 || seam[x] >= h) {
+				throw new IllegalArgumentException();
 			}
+			if (seam[x] - seam[x + 1] > 1 || seam[x] - seam[x + 1] < -1) {
+				throw new IllegalArgumentException();
+			}
+		}
+		if (seam[w - 1] < 0 || seam[w - 1] >= h) {
+			throw new IllegalArgumentException();
+		}
+		for (int x = 0; x < w; x++) {
+			System.arraycopy(c[x], seam[x] + 1, c[x], seam[x], h - 1 - seam[x]);
 		}
 		h--;
 	}
 
 	public void removeVerticalSeam(int[] seam)     // remove vertical seam from current picture
 	{
+		if (seam.length != h || w == 1) {
+			throw new IllegalArgumentException();
+		}
+		for (int y = 0; y < h - 1; y++) {
+			if (seam[y] < 0 || seam[y] >= w) {
+				throw new IllegalArgumentException();
+			}
+			if (seam[y] - seam[y + 1] > 1 || seam[y] - seam[y + 1] < -1) {
+				throw new IllegalArgumentException();
+			}
+		}
+		if (seam[h - 1] < 0 || seam[h - 1] >= w) {
+			throw new IllegalArgumentException();
+		}
 		for (int y = 0; y < h; y++) {
 			for (int x = seam[y]; x < w - 1; x++) {
 				c[x][y] = c[x + 1][y];
 			}
 		}
+		c[w-1] = null;
 		w--;
 	}
 }
