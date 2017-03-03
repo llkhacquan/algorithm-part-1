@@ -8,14 +8,16 @@ import java.util.Map;
  * Created by quannk on 03/03/2017.
  */
 public class BaseballElimination {
-	private final static int SOURCE = 0;
-	private final static int END = 1;
-	private final static int FIRST_TEAM_VERTEX = 2;
 	private final static byte TRIVIAL_ELIMINATED = 2;
 	private final static byte NON_TRIVIAL_ELIMINATED = 3;
 	private final static byte NOT_ELIMINATED = 1;
 	private final static byte UNKNOWN = 0;
+
+	private final static int SOURCE = 0;
+	private final static int END = 1;
+	private final static int FIRST_TEAM_VERTEX = 2;
 	private final int FIRST_GAME_VERTEX;
+
 	private final int data[][];
 	private final Map<String, Integer> teamMap = new HashMap<>();
 	private final String[] teamName;
@@ -42,8 +44,8 @@ public class BaseballElimination {
 			teamName[i] = in.readString();
 			teamMap.put(teamName[i], i);
 			data[i][N] = in.readInt(); // win
-			data[i][N + 1] = in.readInt(); // win
-			data[i][N + 2] = in.readInt(); // win
+			data[i][N + 1] = in.readInt(); // lost
+			data[i][N + 2] = in.readInt(); // remain
 			for (int j = 0; j < N; j++) {
 				data[i][j] = in.readInt();
 			}
@@ -55,19 +57,24 @@ public class BaseballElimination {
 		this.maxTeam = maxTeam;
 		// find trivial eliminated
 		for (int i = 0; i < N; i++) {
-			if (data[i][N] + data[i][2] < maxWin) {
+			if (data[i][N] + data[i][N + 2] < maxWin) {
 				eliminated[i] = TRIVIAL_ELIMINATED;
 			}
 		}
 	}
 
 	public static void main(String[] args) {
-		BaseballElimination division = new BaseballElimination(args[0]);
+		BaseballElimination division = new BaseballElimination("part2-week3/baseball/teams5.txt");
 		for (String team : division.teams()) {
 			if (division.isEliminated(team)) {
-				StdOut.print(team + " is eliminated by the subset R = { ");
-				for (String t : division.certificateOfElimination(team)) {
-					StdOut.print(t + " ");
+				ArrayList<String> r = (ArrayList<String>) division.certificateOfElimination(team);
+				if (r.size() > 1) {
+					StdOut.print(team + " is eliminated by the subset R = { ");
+					for (String t : r) {
+						StdOut.print(t + " ");
+					}
+				} else {
+					StdOut.println(team + " is trivial eliminated");
 				}
 				StdOut.println("}");
 			} else {
@@ -83,8 +90,7 @@ public class BaseballElimination {
 			for (int j = i + 1; j < N; j++) {
 				// game between i and j
 				int vertex = getGameVertex(i, j);
-				G.addEdge(new FlowEdge(SOURCE, vertex, data[i][j + 3]));
-
+				G.addEdge(new FlowEdge(SOURCE, vertex, data[i][j]));
 				G.addEdge(new FlowEdge(vertex, FIRST_TEAM_VERTEX + i, Double.MAX_VALUE));
 				G.addEdge(new FlowEdge(vertex, FIRST_TEAM_VERTEX + j, Double.MAX_VALUE));
 			}
@@ -92,7 +98,7 @@ public class BaseballElimination {
 
 		// build edge from TEAM to END
 		for (int t = 0; t < N; t++) {
-			G.addEdge(new FlowEdge(t, END, data[team][0] + data[team][2] - data[t][0]));
+			G.addEdge(new FlowEdge(t + FIRST_TEAM_VERTEX, END, data[team][N] + data[team][N + 2] - data[t][N]));
 		}
 
 		return G;
@@ -170,8 +176,7 @@ public class BaseballElimination {
 	public boolean isEliminated(String team) {
 		int t = getTeam(team);
 		if (eliminated[t] == UNKNOWN) {
-			int teamId = getTeam(team);
-			FlowNetwork G = buildFlowNetwork(teamId);
+			FlowNetwork G = buildFlowNetwork(t);
 			new FordFulkerson(G, SOURCE, END);
 			for (FlowEdge e : G.adj(SOURCE)) {
 				if (e.flow() != e.capacity()) {
@@ -189,9 +194,9 @@ public class BaseballElimination {
 	public Iterable<String> certificateOfElimination(String team) {
 		int teamId = getTeam(team);
 		if (eliminated[teamId] == TRIVIAL_ELIMINATED) {
-			return new ArrayList<String>() {{
-				add(maxTeam);
-			}};
+			ArrayList<String> r = new ArrayList<>();
+			r.add(maxTeam);
+			return r;
 		} else if (eliminated[teamId] == NOT_ELIMINATED) {
 			return null;
 		}
@@ -205,9 +210,10 @@ public class BaseballElimination {
 		}
 		if (eliminated[teamId] == UNKNOWN) {
 			eliminated[teamId] = NOT_ELIMINATED;
+			return null;
 		}
 		ArrayList<String> result = new ArrayList<>();
-		for (int i = FIRST_TEAM_VERTEX; i < FIRST_GAME_VERTEX + N; i++) {
+		for (int i = FIRST_TEAM_VERTEX; i < FIRST_TEAM_VERTEX + N; i++) {
 			if (ff.inCut(i)) {
 				result.add(teamName[i - FIRST_TEAM_VERTEX]);
 			}
@@ -219,8 +225,6 @@ public class BaseballElimination {
 		if (i > j) {
 			throw new RuntimeException();
 		}
-		//          /     i elements    \
-		// vertex = (N)+(N-2)+...+(N+1-I) + j + FIRST_GAME_VERTEX
-		return (N * 2 + 1 - i) * i / 2 + j + FIRST_GAME_VERTEX;
+		return (2 * N - 1 - i) * i / 2 + (j - i - 1) + FIRST_GAME_VERTEX;
 	}
 }
