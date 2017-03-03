@@ -1,6 +1,6 @@
-import edu.princeton.cs.algs4.In;
-import edu.princeton.cs.algs4.StdOut;
+import edu.princeton.cs.algs4.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,10 +8,20 @@ import java.util.Map;
  * Created by quannk on 03/03/2017.
  */
 public class BaseballElimination {
+	private final static int SOURCE = 0;
+	private final static int END = 1;
+	private final static int FIRST_TEAM_VERTEX = 2;
+	private final static byte TRIVIAL_ELIMINATED = 2;
+	private final static byte NON_TRIVIAL_ELIMINATED = 3;
+	private final static byte NOT_ELIMINATED = 1;
+	private final static byte UNKNOWN = 0;
+	private final int FIRST_GAME_VERTEX;
 	private final int data[][];
-	private final Map<String, Integer> teamName = new HashMap<>();
+	private final Map<String, Integer> teamMap = new HashMap<>();
+	private final String[] teamName;
 	private final int N;
-	private final boolean[] eliminated;
+	private final byte[] eliminated;
+	private final String maxTeam;
 
 	/**
 	 * create a baseball division from given filename in format specified below
@@ -22,11 +32,15 @@ public class BaseballElimination {
 		In in = new In(filename);
 		N = in.readInt();
 		data = new int[N][N + 3];
-		eliminated = new boolean[N];
+		eliminated = new byte[N];
+		teamName = new String[N];
+		FIRST_GAME_VERTEX = FIRST_TEAM_VERTEX + N;
 
 		int maxWin = 0;
+		String maxTeam = null;
 		for (int i = 0; i < N; i++) {
-			teamName.put(in.readString(), i);
+			teamName[i] = in.readString();
+			teamMap.put(teamName[i], i);
 			data[i][N] = in.readInt(); // win
 			data[i][N + 1] = in.readInt(); // win
 			data[i][N + 2] = in.readInt(); // win
@@ -35,13 +49,14 @@ public class BaseballElimination {
 			}
 			if (maxWin < data[i][N]) {
 				maxWin = data[i][N];
+				maxTeam = teamName[i];
 			}
 		}
-
+		this.maxTeam = maxTeam;
 		// find trivial eliminated
 		for (int i = 0; i < N; i++) {
 			if (data[i][N] + data[i][2] < maxWin) {
-				eliminated[i] = true;
+				eliminated[i] = TRIVIAL_ELIMINATED;
 			}
 		}
 	}
@@ -61,11 +76,33 @@ public class BaseballElimination {
 		}
 	}
 
+	private FlowNetwork buildFlowNetwork(int team) {
+		FlowNetwork G = new FlowNetwork(2 + N + N * (N - 1) / 2);
+		// build edge from SOURCE to GAME and from GAME TO TEAM
+		for (int i = 0; i < N - 1; i++) {
+			for (int j = i + 1; j < N; j++) {
+				// game between i and j
+				int vertex = getGameVertex(i, j);
+				G.addEdge(new FlowEdge(SOURCE, vertex, data[i][j + 3]));
+
+				G.addEdge(new FlowEdge(vertex, FIRST_TEAM_VERTEX + i, Double.MAX_VALUE));
+				G.addEdge(new FlowEdge(vertex, FIRST_TEAM_VERTEX + j, Double.MAX_VALUE));
+			}
+		}
+
+		// build edge from TEAM to END
+		for (int t = 0; t < N; t++) {
+			G.addEdge(new FlowEdge(t, END, data[team][0] + data[team][2] - data[t][0]));
+		}
+
+		return G;
+	}
+
 	/**
 	 * number of teams
 	 */
 	public int numberOfTeams() {
-		return teamName.size();
+		return teamMap.size();
 	}
 
 	/**
@@ -74,7 +111,7 @@ public class BaseballElimination {
 	 * @return
 	 */
 	public Iterable<String> teams() {
-		return teamName.keySet();
+		return teamMap.keySet();
 	}
 
 	/**
@@ -88,7 +125,7 @@ public class BaseballElimination {
 	}
 
 	private int getTeam(String team) {
-		Integer i = teamName.get(team);
+		Integer i = teamMap.get(team);
 		if (i != null) {
 			return i;
 		} else {
@@ -131,10 +168,59 @@ public class BaseballElimination {
 	 * @return
 	 */
 	public boolean isEliminated(String team) {
-		return eliminated[getTeam(team)];
+		int t = getTeam(team);
+		if (eliminated[t] == UNKNOWN) {
+			int teamId = getTeam(team);
+			FlowNetwork G = buildFlowNetwork(teamId);
+			new FordFulkerson(G, SOURCE, END);
+			for (FlowEdge e : G.adj(SOURCE)) {
+				if (e.flow() != e.capacity()) {
+					eliminated[t] = NON_TRIVIAL_ELIMINATED;
+					break;
+				}
+			}
+			if (eliminated[t] == UNKNOWN) {
+				eliminated[t] = NOT_ELIMINATED;
+			}
+		}
+		return eliminated[t] >= TRIVIAL_ELIMINATED;
 	}
 
 	public Iterable<String> certificateOfElimination(String team) {
-		return null;
+		int teamId = getTeam(team);
+		if (eliminated[teamId] == TRIVIAL_ELIMINATED) {
+			return new ArrayList<String>() {{
+				add(maxTeam);
+			}};
+		} else if (eliminated[teamId] == NOT_ELIMINATED) {
+			return null;
+		}
+		FlowNetwork G = buildFlowNetwork(teamId);
+		FordFulkerson ff = new FordFulkerson(G, 0, 1);
+		for (FlowEdge e : G.adj(SOURCE)) {
+			if (e.flow() != e.capacity()) {
+				eliminated[teamId] = NON_TRIVIAL_ELIMINATED;
+				break;
+			}
+		}
+		if (eliminated[teamId] == UNKNOWN) {
+			eliminated[teamId] = NOT_ELIMINATED;
+		}
+		ArrayList<String> result = new ArrayList<>();
+		for (int i = FIRST_TEAM_VERTEX; i < FIRST_GAME_VERTEX + N; i++) {
+			if (ff.inCut(i)) {
+				result.add(teamName[i - FIRST_TEAM_VERTEX]);
+			}
+		}
+		return result;
+	}
+
+	private int getGameVertex(int i, int j) {
+		if (i > j) {
+			throw new RuntimeException();
+		}
+		//          /     i elements    \
+		// vertex = (N)+(N-2)+...+(N+1-I) + j + FIRST_GAME_VERTEX
+		return (N * 2 + 1 - i) * i / 2 + j + FIRST_GAME_VERTEX;
 	}
 }
